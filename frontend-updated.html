@@ -1,0 +1,86 @@
+<!-- FRONTEND-UPDATED.HTML - With API Integration -->
+<!-- Place this code in your frontend HTML script section -->
+
+<!-- API Configuration -->
+const API_BASE_URL = 'http://localhost:3000';
+
+<!-- API Service Layer -->
+const apiService = {
+  async createBooking(bookingData) {
+    const response = await fetch(`${API_BASE_URL}/api/create-booking`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bookingData)
+    });
+    if (!response.ok) throw new Error('Failed to create booking');
+    return await response.json();
+  },
+
+  async verifyPayment(bookingId, transactionId) {
+    const response = await fetch(`${API_BASE_URL}/api/verify-payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookingId, transactionId })
+    });
+    if (!response.ok) throw new Error('Failed to verify payment');
+    return await response.json();
+  },
+
+  async createCalendarEvent(bookingId) {
+    const response = await fetch(`${API_BASE_URL}/api/create-calendar-event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookingId })
+    });
+    if (!response.ok) throw new Error('Failed to create calendar event');
+    return await response.json();
+  },
+
+  async sendConfirmationEmails(bookingId) {
+    const response = await fetch(`${API_BASE_URL}/api/send-confirmation-emails`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookingId })
+    });
+    if (!response.ok) throw new Error('Failed to send confirmation emails');
+    return await response.json();
+  }
+};
+
+<!-- Updated Continue to Payment Handler -->
+document.getElementById('continueToPayment').addEventListener('click', async () => {
+  try {
+    const bookingResponse = await apiService.createBooking({
+      service: bookingState.service,
+      serviceName: bookingState.serviceName,
+      price: bookingState.price,
+      priceUSD: bookingState.priceUSD,
+      name: bookingState.name,
+      email: bookingState.email,
+      phone: bookingState.phone,
+      date: bookingState.date,
+      time: bookingState.time
+    });
+    bookingState.bookingId = bookingResponse.bookingId;
+    showStep(3);
+  } catch (error) {
+    console.error('Booking error:', error);
+    alert('Booking failed: ' + error.message);
+  }
+});
+
+<!-- Updated Payment Verification Handler -->
+document.getElementById('verifyPayment').addEventListener('click', async () => {
+  try {
+    await apiService.verifyPayment(bookingState.bookingId, 'TXN_' + Date.now());
+    const calendarResponse = await apiService.createCalendarEvent(bookingState.bookingId);
+    bookingState.meetLink = calendarResponse.meetLink;
+    await apiService.sendConfirmationEmails(bookingState.bookingId);
+    showStep(4);
+  } catch (error) {
+    console.error('Payment error:', error);
+    alert('Payment verification failed: ' + error.message);
+  }
+});
+
+<!-- See FRONTEND-INTEGRATION-GUIDE.md for complete implementation -->
